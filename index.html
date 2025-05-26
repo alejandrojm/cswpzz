@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucigrama</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Color de fondo suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-x: hidden; /* Evitar scroll horizontal */
+        }
+        .crossword-container {
+            background-color: #ffffff;
+            border-radius: 1rem; /* Bordes redondeados */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Sombra suave */
+            padding: 2rem;
+            display: flex;
+            flex-direction: column; /* Siempre en columna para que la cuadrícula esté arriba y las pistas abajo */
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+            align-items: center; /* Centrar elementos en el contenedor */
+        }
+        .crossword-grid {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+            grid-template-rows: repeat(var(--grid-rows), minmax(0, 1fr));
+            gap: 1px;
+            border: 1px solid #cbd5e1; /* Borde de la cuadrícula */
+            background-color: #cbd5e1; /* Color de las líneas de la cuadrícula */
+            max-width: 600px; /* Limitar el ancho de la cuadrícula */
+            width: 100%; /* Asegurar que ocupe el ancho disponible */
+            margin: 0 auto; /* Centrar la cuadrícula */
+            aspect-ratio: 1 / 1; /* Mantener la relación de aspecto cuadrada */
+        }
+        .cell {
+            width: 100%;
+            height: 100%;
+            background-color: #e2e8f0; /* Color de las celdas vacías */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .cell.word-cell {
+            background-color: #ffffff; /* Color de las celdas de palabras */
+        }
+        .cell input {
+            width: 90%;
+            height: 90%;
+            text-align: center;
+            font-size: 1.25rem; /* Tamaño de fuente más grande */
+            text-transform: uppercase;
+            border: none;
+            background-color: transparent;
+            outline: none;
+            border-radius: 0.375rem; /* Bordes redondeados para inputs */
+            transition: background-color 0.3s ease;
+        }
+        .cell input:focus {
+            background-color: #f0f9ff; /* Color al enfocar */
+        }
+        .cell .word-number {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 0.75rem; /* Tamaño de fuente del número */
+            color: #4a5568; /* Color del número */
+            font-weight: bold;
+        }
+        .clues-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%; /* Ocupar todo el ancho disponible */
+            max-width: 800px; /* Limitar el ancho de las pistas */
+        }
+        .clues-section h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+        .clues-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .clues-list li {
+            margin-bottom: 0.5rem;
+            color: #4a5568;
+        }
+        .clues-list li strong {
+            color: #2d3748;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+        .button-group button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes más redondeados */
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+        }
+        .button-group button.check-button {
+            background-color: #4CAF50; /* Verde */
+            color: white;
+        }
+        .button-group button.check-button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+        }
+        .button-group button.reset-button {
+            background-color: #f44336; /* Rojo */
+            color: white;
+        }
+        .button-group button.reset-button:hover {
+            background-color: #da190b;
+            transform: translateY(-2px);
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            z-index: 1000;
+            display: none; /* Oculto por defecto */
+            text-align: center;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .counter-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .crossword-container {
+                padding: 3rem; /* Más padding en pantallas grandes */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="crossword-container">
+        <div class="crossword-grid" id="crossword-grid">
+            </div>
+
+        <div id="correct-answers-counter" class="counter-display"></div>
+
+        <div class="button-group">
+            <button class="check-button" onclick="checkAnswers()">Comprobar</button>
+            <button class="reset-button" onclick="resetCrossword()">Reiniciar</button>
+        </div>
+
+        <div class="clues-section">
+            <h2 class="text-xl md:text-2xl">Horizontales</h2>
+            <ol id="horizontal-clues" class="clues-list"></ol>
+
+            <h2 class="text-xl md:text-2xl mt-6">Verticales</h2>
+            <ol id="vertical-clues" class="clues-list"></ol>
+        </div>
+    </div>
+
+    <div id="message-box" class="message-box"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+    <script>
+        // Helper function to convert alphabetical column to 0-indexed number
+        function alphaToCol(char) {
+            return char.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0);
+        }
+
+        // Helper function to convert 1-indexed row number to 0-indexed
+        function rowToIdx(num) {
+            return num - 1;
+        }
+
+        // Definición de las palabras del crucigrama y sus propiedades
+        const words = [
+            // Horizontales
+            {
+                word: "SANGRIA",
+                clue: "Espacio que se deja al inicio de una línea o párrafo, desplazando el texto hacia la derecha o izquierda para organizar y dar estructura al contenido",
+                direction: "horizontal",
+                start_row: rowToIdx(3), // C3 -> row 3 - 1 = 2
+                start_col: alphaToCol('C'), // C3 -> 'C' -> 2
+                number: 1
+            },
+            {
+                word: "FORMATO",
+                clue: "Configuración o disposición de elementos dentro de un documento que define su apariencia y estructura",
+                direction: "horizontal",
+                start_row: rowToIdx(4), // J4 -> row 4 - 1 = 3
+                start_col: alphaToCol('J'), // J4 -> 'J' -> 9
+                number: 2
+            },
+            {
+                word: "CIRCULAR",
+                clue: "Representación visual de datos estadísticos o comparativos en forma de círculo dividido en secciones proporcionales.",
+                direction: "horizontal",
+                start_row: rowToIdx(6), // A6 -> row 6 - 1 = 5
+                start_col: alphaToCol('A'), // A6 -> 'A' -> 0
+                number: 3
+            },
+            {
+                word: "INDICE",
+                clue: "Lista ordenada de términos, temas o secciones de un documento de Google, junto con las páginas donde se encuentran, facilitando la navegación.",
+                direction: "horizontal",
+                start_row: rowToIdx(7), // M7 -> row 7 - 1 = 6
+                start_col: alphaToCol('M'), // M7 -> 'M' -> 12
+                number: 4
+            },
+            {
+                word: "ENCABEZADO",
+                clue: "Sección de texto que se encuentra al principio de un documento de Google y que suele incluir información como el nombre del autor o número de página",
+                direction: "horizontal",
+                start_row: rowToIdx(9), // G9 -> row 9 - 1 = 8
+                start_col: alphaToCol('G'), // G9 -> 'G' -> 6
+                number: 5
+            },
+            // Verticales
+            {
+                word: "MARCADEAGUA",
+                clue: "Imagen o texto semitransparente que se superpone al contenido principal de un documento de Google para indicar su estado, confidencialidad u otro mensaje importante.",
+                direction: "vertical",
+                start_row: rowToIdx(1), // R1 -> row 1 - 1 = 0
+                start_col: alphaToCol('R'), // R1 -> 'R' -> 17
+                number: 6
+            },
+            {
+                word: "HIPERVINCULO",
+                clue: "Enlace interactivo que dirige a un usuario de un documento a otro recurso o página web relacionada al hacer clic en él.",
+                direction: "vertical",
+                start_row: rowToIdx(2), // H2 -> row 2 - 1 = 1
+                start_col: alphaToCol('H'), // H2 -> 'H' -> 7
+                number: 7
+            },
+            {
+                word: "ALINEACION",
+                clue: "Ajuste visual de la posición del texto o elementos en un documento de Google, como centrado, justificado, alineado a la izquierda o a la derecha.",
+                direction: "vertical",
+                start_row: rowToIdx(4), // N4 -> row 4 - 1 = 3
+                start_col: alphaToCol('N'), // N4 -> 'N' -> 13
+                number: 8
+            },
+            {
+                word: "IMAGEN",
+                clue: "Representación visual o gráfica que se inserta en un documento para ilustrar o complementar su contenido.",
+                direction: "vertical",
+                start_row: rowToIdx(6), // B6 -> row 6 - 1 = 5
+                start_col: alphaToCol('B'), // B6 -> 'B' -> 1
+                number: 9
+            },
+            {
+                word: "TABLA",
+                clue: "Estructura organizada de filas y columnas que se utiliza en documentos de Google para mostrar datos de manera ordenada y comparativa.",
+                direction: "vertical",
+                start_row: rowToIdx(8), // J8 -> row 8 - 1 = 7
+                start_col: alphaToCol('J'), // J8 -> 'J' -> 9
+                number: 10
+            }
+        ];
+
+        // Dimensiones de la cuadrícula basadas en las nuevas coordenadas
+        // El máximo índice de fila es 13 (para HIPERVINCULO), por lo que necesitamos 14 filas (0-13)
+        const GRID_ROWS = 14;
+        // El máximo índice de columna es 17 (para MARCADEAGUA e INDICE), por lo que necesitamos 18 columnas (0-17)
+        const GRID_COLS = 18;
+
+        // Contador de respuestas correctas
+        let correctAnswersCount = 0;
+        const totalWords = words.length;
+
+        // Inicializa la cuadrícula con celdas vacías
+        let grid = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill({
+            letter: '', // La letra correcta para esta celda
+            isWordCell: false, // Indica si esta celda es parte de una palabra
+            wordNumbers: [] // Números de las palabras que empiezan en esta celda
+        }));
+
+        /**
+         * Rellena la cuadrícula con las palabras definidas.
+         * Marca las celdas que forman parte de una palabra y añade los números de las palabras.
+         */
+        function populateGrid() {
+            // Reinicia la cuadrícula antes de poblarla para asegurar un estado limpio
+            grid = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill({
+                letter: '',
+                isWordCell: false,
+                wordNumbers: []
+            }));
+
+            words.forEach(wordObj => {
+                const { word, direction, start_row, start_col, number } = wordObj;
+                for (let i = 0; i < word.length; i++) {
+                    let r = start_row;
+                    let c = start_col;
+                    if (direction === "horizontal") {
+                        c += i;
+                    } else { // vertical
+                        r += i;
+                    }
+
+                    // Asegura que la celda existe dentro de los límites de la cuadrícula
+                    if (r < GRID_ROWS && c < GRID_COLS) {
+                        // Crea una nueva copia del objeto de la celda para evitar mutaciones directas
+                        const currentCell = { ...grid[r][c] };
+                        currentCell.letter = word[i];
+                        currentCell.isWordCell = true;
+                        if (i === 0) { // Solo añade el número a la celda de inicio de la palabra
+                            currentCell.wordNumbers = [...currentCell.wordNumbers, number];
+                        }
+                        grid[r][c] = currentCell;
+                    }
+                }
+            });
+        }
+
+        /**
+         * Genera el HTML de la cuadrícula del crucigrama y las pistas.
+         */
+        function renderCrossword() {
+            const gridElement = document.getElementById('crossword-grid');
+            gridElement.style.setProperty('--grid-rows', GRID_ROWS);
+            gridElement.style.setProperty('--grid-cols', GRID_COLS);
+            gridElement.innerHTML = ''; // Limpia cualquier contenido existente
+
+            // Genera las celdas de la cuadrícula
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const cellData = grid[r][c];
+                    const cellDiv = document.createElement('div');
+                    cellDiv.classList.add('cell');
+                    cellDiv.dataset.row = r;
+                    cellDiv.dataset.col = c;
+
+                    if (cellData.isWordCell) {
+                        cellDiv.classList.add('word-cell');
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.maxLength = 1;
+                        input.dataset.row = r;
+                        input.dataset.col = c;
+                        input.addEventListener('input', (e) => {
+                            e.target.value = e.target.value.toUpperCase(); // Convertir a mayúsculas
+
+                            const currentRow = parseInt(e.target.dataset.row);
+                            const currentCol = parseInt(e.target.dataset.col);
+
+                            // Auto-avance del cursor
+                            if (e.target.value !== '') {
+                                let nextInputFound = false;
+                                // Intenta avanzar en la dirección de la primera palabra que contiene esta celda
+                                for (const wordObj of words) {
+                                    const { word, direction, start_row, start_col } = wordObj;
+
+                                    let currentWordIndex = -1; // Índice de la letra actual dentro de la palabra
+                                    for (let i = 0; i < word.length; i++) {
+                                        let r = start_row;
+                                        let c = start_col;
+                                        if (direction === "horizontal") {
+                                            c += i;
+                                        } else { // vertical
+                                            r += i;
+                                        }
+                                        if (r === currentRow && c === currentCol) {
+                                            currentWordIndex = i;
+                                            break;
+                                        }
+                                    }
+
+                                    if (currentWordIndex !== -1 && currentWordIndex < word.length - 1) {
+                                        // Esta celda es parte de esta palabra, y no es la última letra
+                                        let nextRow = currentRow;
+                                        let nextCol = currentCol;
+
+                                        if (direction === "horizontal") {
+                                            nextCol++;
+                                        } else { // vertical
+                                            nextRow++;
+                                        }
+
+                                        const nextCellInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
+                                        if (nextCellInput) {
+                                            nextCellInput.focus();
+                                            nextInputFound = true;
+                                            break; // Mover a la siguiente celda de la primera palabra coincidente encontrada
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                        cellDiv.appendChild(input);
+                    }
+
+                    // Añade el número de la palabra si la celda es el inicio de una
+                    if (cellData.wordNumbers.length > 0) {
+                        const wordNumberSpan = document.createElement('span');
+                        wordNumberSpan.classList.add('word-number');
+                        wordNumberSpan.textContent = cellData.wordNumbers.join(','); // Muestra todos los números si hay intersección
+                        cellDiv.appendChild(wordNumberSpan);
+                    }
+                    gridElement.appendChild(cellDiv);
+                }
+            }
+
+            // Genera las pistas
+            const horizontalCluesList = document.getElementById('horizontal-clues');
+            const verticalCluesList = document.getElementById('vertical-clues');
+            horizontalCluesList.innerHTML = '';
+            verticalCluesList.innerHTML = '';
+
+            words.sort((a, b) => a.number - b.number).forEach(wordObj => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<strong>${wordObj.number}.</strong> ${wordObj.clue}`;
+                if (wordObj.direction === 'horizontal') {
+                    horizontalCluesList.appendChild(listItem);
+                } else {
+                    verticalCluesList.appendChild(listItem);
+                }
+            });
+        }
+
+        /**
+         * Actualiza la visualización del contador de respuestas correctas.
+         */
+        function updateCounterDisplay() {
+            const counterElement = document.getElementById('correct-answers-counter');
+            counterElement.textContent = `Preguntas correctas: ${correctAnswersCount}/${totalWords}`;
+        }
+
+        /**
+         * Dispara un efecto de confeti.
+         */
+        function triggerConfetti() {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+
+        /**
+         * Comprueba las respuestas introducidas por el usuario.
+         * Resalta las palabras correctas en verde y las incorrectas en rojo.
+         */
+        function checkAnswers() {
+            correctAnswersCount = 0; // Reinicia el contador antes de cada comprobación
+            let allWordsCorrect = true; // Cambiado para evitar confusión con allCorrect en el mensaje
+            words.forEach(wordObj => {
+                const { word, direction, start_row, start_col } = wordObj;
+                let userAnswer = '';
+                const wordCells = [];
+
+                for (let i = 0; i < word.length; i++) {
+                    let r = start_row;
+                    let c = start_col;
+                    if (direction === "horizontal") {
+                        c += i;
+                    } else { // vertical
+                        r += i;
+                    }
+
+                    const cellElement = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+                    if (cellElement && cellElement.querySelector('input')) {
+                        const inputElement = cellElement.querySelector('input');
+                        userAnswer += inputElement.value.toUpperCase();
+                        wordCells.push(inputElement);
+                    } else {
+                        // Si la celda no es un input, significa que no es parte de esta palabra
+                        allWordsCorrect = false;
+                        break;
+                    }
+                }
+
+                if (userAnswer === word) {
+                    correctAnswersCount++;
+                    wordCells.forEach(input => {
+                        input.style.backgroundColor = '#d4edda'; // Verde claro para correcto
+                    });
+                } else {
+                    allWordsCorrect = false;
+                    wordCells.forEach(input => {
+                        input.style.backgroundColor = '#f8d7da'; // Rojo claro para incorrecto
+                    });
+                }
+            });
+
+            updateCounterDisplay(); // Actualiza el contador después de la comprobación
+
+            if (correctAnswersCount === totalWords) { // Comprueba si todas las palabras son correctas
+                showMessage("¡Felicidades! Has completado el crucigrama.");
+                triggerConfetti(); // Dispara el confeti
+            } else {
+                showMessage("Algunas respuestas son incorrectas. ¡Sigue intentándolo!");
+            }
+        }
+
+        /**
+         * Reinicia el crucigrama, borrando todas las entradas del usuario.
+         */
+        function resetCrossword() {
+            const inputs = document.querySelectorAll('.crossword-grid input');
+            inputs.forEach(input => {
+                input.value = '';
+                input.style.backgroundColor = ''; // Restablecer color de fondo
+            });
+            correctAnswersCount = 0; // Reinicia el contador
+            updateCounterDisplay(); // Actualiza el contador
+            showMessage("Crucigrama reiniciado.", 2000);
+        }
+
+        /**
+         * Muestra un mensaje temporal en la pantalla.
+         * @param {string} message - El mensaje a mostrar.
+         * @param {number} duration - Duración en milisegundos para mostrar el mensaje.
+         */
+        function showMessage(message, duration = 3000) {
+            const messageBox = document.getElementById('message-box');
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, duration);
+        }
+
+        // Inicializa el crucigrama cuando la ventana se carga
+        window.onload = function() {
+            populateGrid();
+            renderCrossword();
+            updateCounterDisplay(); // Muestra el contador inicial (0/10)
+        };
+    </script>
+</body>
+</html>
