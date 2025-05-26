@@ -163,6 +163,34 @@
             width: 100%;
         }
 
+        /* Estilos para el campo de nombre */
+        .name-input-container {
+            width: 100%;
+            max-width: 300px; /* Limitar el ancho del campo de nombre */
+            margin-bottom: 1.5rem; /* Espacio entre el campo de nombre y los botones */
+            text-align: center;
+        }
+        .name-input-container input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid #cbd5e1; /* Borde suave */
+            border-radius: 0.5rem; /* Bordes redondeados */
+            font-size: 1rem;
+            color: #4a5568; /* Color de texto discreto */
+            text-align: center;
+            background-color: #f8fafc; /* Fondo muy claro */
+            transition: all 0.2s ease-in-out;
+        }
+        .name-input-container input::placeholder {
+            color: #a0aec0; /* Color del placeholder discreto */
+        }
+        .name-input-container input:focus {
+            outline: none;
+            border-color: #63b3ed; /* Borde azul al enfocar */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Sombra suave al enfocar */
+        }
+
+
         /* Responsive adjustments */
         @media (min-width: 768px) {
             .crossword-container {
@@ -178,12 +206,16 @@
 
         <div id="correct-answers-counter" class="counter-display"></div>
 
+        <div class="name-input-container">
+            <input type="text" id="playerName" placeholder="Escribe tu nombre">
+        </div>
+
         <div class="button-group">
             <button class="check-button" onclick="checkAnswers()">Comprobar</button>
             <button class="reset-button" onclick="resetCrossword()">Reiniciar</button>
         </div>
 
-        <div class="clues-section">
+        <div class="clues-section hidden">
             <h2 class="text-xl md:text-2xl">Horizontales</h2>
             <ol id="horizontal-clues" class="clues-list"></ol>
 
@@ -387,7 +419,7 @@
                             // Priorizar avance horizontal si es posible
                             if (currentCol + 1 < GRID_COLS) {
                                 const nextHorizontalInput = document.querySelector(`input[data-row="${currentRow}"][data-col="${currentCol + 1}"]`);
-                                if (nextHorizontalInput) {
+                                if (nextHorizontalInput && grid[currentRow][currentCol + 1].isWordCell) { // Solo avanza si la siguiente celda es parte de una palabra
                                     nextHorizontalInput.focus();
                                     moved = true;
                                 }
@@ -396,7 +428,7 @@
                             // Si no se movió horizontalmente, intentar verticalmente
                             if (!moved && currentRow + 1 < GRID_ROWS) {
                                 const nextVerticalInput = document.querySelector(`input[data-row="${currentRow + 1}"][data-col="${currentCol}"]`);
-                                if (nextVerticalInput) {
+                                if (nextVerticalInput && grid[currentRow + 1][currentCol].isWordCell) { // Solo avanza si la siguiente celda es parte de una palabra
                                     nextVerticalInput.focus();
                                     moved = true;
                                 }
@@ -416,7 +448,7 @@
                 }
             }
 
-            // Genera las pistas
+            // Genera las pistas (esta parte del código sigue aquí aunque la sección esté oculta en el HTML)
             const horizontalCluesList = document.getElementById('horizontal-clues');
             const verticalCluesList = document.getElementById('vertical-clues');
             horizontalCluesList.innerHTML = '';
@@ -501,7 +533,9 @@
             updateCounterDisplay(); // Actualiza el contador después de la comprobación
 
             if (correctAnswersCount === totalWords) { // Comprueba si todas las palabras son correctas
-                showMessage("¡Felicidades! Has completado el crucigrama.");
+                const playerName = document.getElementById('playerName').value;
+                const message = playerName ? `¡Felicidades, ${playerName}! Has completado el crucigrama.` : "¡Felicidades! Has completado el crucigrama.";
+                showMessage(message);
                 triggerConfetti(); // Dispara el confeti
             } else {
                 showMessage("Algunas respuestas son incorrectas. ¡Sigue intentándolo!");
@@ -517,6 +551,7 @@
                 input.value = '';
                 input.style.backgroundColor = ''; // Restablecer color de fondo
             });
+            document.getElementById('playerName').value = ''; // Borrar el nombre también
             correctAnswersCount = 0; // Reinicia el contador
             updateCounterDisplay(); // Actualiza el contador
             showMessage("Crucigrama reiniciado.", 2000);
@@ -545,3 +580,4 @@
     </script>
 </body>
 </html>
+
