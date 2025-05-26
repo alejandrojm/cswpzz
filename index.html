@@ -57,13 +57,19 @@
             width: 90%;
             height: 90%;
             text-align: center;
-            font-size: 1.25rem; /* Tamaño de fuente más grande */
+            font-size: 1.25rem; /* Tamaño de fuente por defecto para pantallas grandes */
             text-transform: uppercase;
             border: none;
             background-color: transparent;
             outline: none;
             border-radius: 0.375rem; /* Bordes redondeados para inputs */
             transition: background-color 0.3s ease;
+        }
+        /* Ajuste de tamaño de fuente para pantallas pequeñas */
+        @media (max-width: 640px) {
+            .cell input {
+                font-size: 1rem; /* Tamaño de fuente más pequeño para móviles */
+            }
         }
         .cell input:focus {
             background-color: #f0f9ff; /* Color al enfocar */
@@ -374,43 +380,25 @@
                             const currentCol = parseInt(e.target.dataset.col);
 
                             // Auto-avance del cursor
-                            let nextInputFound = false;
-                            // Intenta avanzar en la dirección de la primera palabra que contiene esta celda
-                            for (const wordObj of words) {
-                                const { word, direction, start_row, start_col } = wordObj;
+                            let nextRow = currentRow;
+                            let nextCol = currentCol;
+                            let moved = false;
 
-                                let currentWordIndex = -1; // Índice de la letra actual dentro de la palabra
-                                for (let i = 0; i < word.length; i++) {
-                                    let r = start_row;
-                                    let c = start_col;
-                                    if (direction === "horizontal") {
-                                        c += i;
-                                    } else { // vertical
-                                        r += i;
-                                    }
-                                    if (r === currentRow && c === currentCol) {
-                                        currentWordIndex = i;
-                                        break;
-                                    }
+                            // Priorizar avance horizontal si es posible
+                            if (currentCol + 1 < GRID_COLS) {
+                                const nextHorizontalInput = document.querySelector(`input[data-row="${currentRow}"][data-col="${currentCol + 1}"]`);
+                                if (nextHorizontalInput) {
+                                    nextHorizontalInput.focus();
+                                    moved = true;
                                 }
+                            }
 
-                                if (currentWordIndex !== -1 && currentWordIndex < word.length - 1) {
-                                    // Esta celda es parte de esta palabra, y no es la última letra
-                                    let nextRow = currentRow;
-                                    let nextCol = currentCol;
-
-                                    if (direction === "horizontal") {
-                                        nextCol++;
-                                    } else { // vertical
-                                        nextRow++;
-                                    }
-
-                                    const nextCellInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
-                                    if (nextCellInput) {
-                                        nextCellInput.focus();
-                                        nextInputFound = true;
-                                        break; // Mover a la siguiente celda de la primera palabra coincidente encontrada
-                                    }
+                            // Si no se movió horizontalmente, intentar verticalmente
+                            if (!moved && currentRow + 1 < GRID_ROWS) {
+                                const nextVerticalInput = document.querySelector(`input[data-row="${currentRow + 1}"][data-col="${currentCol}"]`);
+                                if (nextVerticalInput) {
+                                    nextVerticalInput.focus();
+                                    moved = true;
                                 }
                             }
                         });
@@ -557,4 +545,3 @@
     </script>
 </body>
 </html>
-
