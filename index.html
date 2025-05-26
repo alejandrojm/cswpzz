@@ -206,7 +206,7 @@
             // Horizontales
             {
                 word: "SANGRIA",
-                clue: "Espacios que se dejan al inicio de una línea o párrafo, desplazando el texto hacia la derecha o izquierda para organizar y dar estructura al contenido",
+                clue: "Espacio que se deja al inicio de una línea o párrafo, desplazando el texto hacia la derecha o izquierda para organizar y dar estructura al contenido",
                 direction: "horizontal",
                 start_row: rowToIdx(3), // C3 -> row 3 - 1 = 2
                 start_col: alphaToCol('C'), // C3 -> 'C' -> 2
@@ -288,8 +288,8 @@
         ];
 
         // Dimensiones de la cuadrícula basadas en las nuevas coordenadas
-        // El máximo índice de fila es 13 (para HIPERVINCULO), por lo que necesitamos 14 filas (0-13)
-        const GRID_ROWS = 14;
+        // El máximo índice de fila es 12 (para HIPERVINCULO y ALINEACION), por lo que necesitamos 13 filas (0-12)
+        const GRID_ROWS = 13;
         // El máximo índice de columna es 17 (para MARCADEAGUA e INDICE), por lo que necesitamos 18 columnas (0-17)
         const GRID_COLS = 18;
 
@@ -374,44 +374,42 @@
                             const currentCol = parseInt(e.target.dataset.col);
 
                             // Auto-avance del cursor
-                            if (e.target.value !== '') {
-                                let nextInputFound = false;
-                                // Intenta avanzar en la dirección de la primera palabra que contiene esta celda
-                                for (const wordObj of words) {
-                                    const { word, direction, start_row, start_col } = wordObj;
+                            let nextInputFound = false;
+                            // Intenta avanzar en la dirección de la primera palabra que contiene esta celda
+                            for (const wordObj of words) {
+                                const { word, direction, start_row, start_col } = wordObj;
 
-                                    let currentWordIndex = -1; // Índice de la letra actual dentro de la palabra
-                                    for (let i = 0; i < word.length; i++) {
-                                        let r = start_row;
-                                        let c = start_col;
-                                        if (direction === "horizontal") {
-                                            c += i;
-                                        } else { // vertical
-                                            r += i;
-                                        }
-                                        if (r === currentRow && c === currentCol) {
-                                            currentWordIndex = i;
-                                            break;
-                                        }
+                                let currentWordIndex = -1; // Índice de la letra actual dentro de la palabra
+                                for (let i = 0; i < word.length; i++) {
+                                    let r = start_row;
+                                    let c = start_col;
+                                    if (direction === "horizontal") {
+                                        c += i;
+                                    } else { // vertical
+                                        r += i;
+                                    }
+                                    if (r === currentRow && c === currentCol) {
+                                        currentWordIndex = i;
+                                        break;
+                                    }
+                                }
+
+                                if (currentWordIndex !== -1 && currentWordIndex < word.length - 1) {
+                                    // Esta celda es parte de esta palabra, y no es la última letra
+                                    let nextRow = currentRow;
+                                    let nextCol = currentCol;
+
+                                    if (direction === "horizontal") {
+                                        nextCol++;
+                                    } else { // vertical
+                                        nextRow++;
                                     }
 
-                                    if (currentWordIndex !== -1 && currentWordIndex < word.length - 1) {
-                                        // Esta celda es parte de esta palabra, y no es la última letra
-                                        let nextRow = currentRow;
-                                        let nextCol = currentCol;
-
-                                        if (direction === "horizontal") {
-                                            nextCol++;
-                                        } else { // vertical
-                                            nextRow++;
-                                        }
-
-                                        const nextCellInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
-                                        if (nextCellInput) {
-                                            nextCellInput.focus();
-                                            nextInputFound = true;
-                                            break; // Mover a la siguiente celda de la primera palabra coincidente encontrada
-                                        }
+                                    const nextCellInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
+                                    if (nextCellInput) {
+                                        nextCellInput.focus();
+                                        nextInputFound = true;
+                                        break; // Mover a la siguiente celda de la primera palabra coincidente encontrada
                                     }
                                 }
                             }
@@ -559,3 +557,4 @@
     </script>
 </body>
 </html>
+
